@@ -143,7 +143,7 @@ for i = block:n_block
         case 2
             mask_type = 'pregnant';
         case 3
-            mask_type = 'drunk';
+            mask_type = 'drug';
         case 4
             mask_type = 'criminal';
         case 5

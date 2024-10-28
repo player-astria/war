@@ -132,7 +132,7 @@ for i = block:n_block
         case 2
             id_name = 'pregnant';
         case 3
-            id_name = 'drunk'; 'drag'
+            id_name = 'drug'; 
         case 4
             id_name = 'criminal';
         case 5
