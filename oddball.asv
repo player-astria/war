@@ -211,38 +211,17 @@ for i = block:n_block
         end      
 
         result.stimulus(2*j) = order;
-        result.response(2*j) = response; % 0-wrong_reaction; 1-reaction; 99-no_reaction
+        result.response(2*j) = response;
         warning on
     end
-    % calculate accuracy
-    right = 0;
-    for n = 1:n_trial
-        ABC = result.stimulus(2*n);
-        R = result.response(2*n);
-        A = floor(ABC/100); % stim_type
-        B = mod(ABC,10); % solder_num
-        C = (ABC-B-C*100)/10; % probe_num
-        if ABC==600 && R==1
-            right = right+1;
-        elseif ABC~=600 && R==99
-            right = right+1;
-        end
-    end
-    result.accuracy(i) = right/n_trial;
     % save data
     writetable(result, sprintf('result/oddball/sub_%d/block_%d.csv', subject, i));
     % rest
     if i < n_block
 %         outp(port_address, 66);
 %         outp(port_address, 0);
-%remind of accuracy
-        acc = result.accuracy(i);
-        if acc<0.8
-            over_error = imread('stimuli_oddball/over_error.png');
-            ShowPicWaitKey(over_error);
-        end
         ShowPicWaitKey(BreakPic);
-
+        
     end
 end
 %% finish
