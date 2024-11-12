@@ -51,6 +51,7 @@ Others
 n_block = 5;
 n_trial = 225;
 trial_duration = 1;
+prac_duration = 1.5;
 % create result data
 result = table();
 result = addvars(result, string.empty(), 'NewVariableNames', "stimulus");
@@ -97,7 +98,7 @@ if block == 1
             ShowPic(IntroStimPic);   
             t_start = Screen('Flip', x.window);
             while KbCheck(), end           
-            while GetSecs - t_start < trial_duration
+            while GetSecs - t_start < prac_duration
                 cost_t = GetSecs - t_start;
                 [keyIsDown, t_end, keyCode] = KbCheck();      
                 if keyIsDown
