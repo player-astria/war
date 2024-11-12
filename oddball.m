@@ -1,5 +1,6 @@
 %% init
 clear;clc;
+rng('shuffle');
 % subject&study info
 prompt = {'Subject''s ID:', 'Start Run:'};
 subject = input(prompt{1});
@@ -33,6 +34,7 @@ KbName('UnifyKeyNames');
 continue_key = KbName('space');
 quit_key = KbName('ESCAPE');
 reaction_key = KbName('space');
+break_key = KbName('s');
 % port setting
 port_address = hex2dec('037F');
     %config_io;
@@ -50,7 +52,6 @@ n_block = 5;
 n_trial = 225;
 trial_duration = 1;
 % create result data
-mkdir(sprintf('result/oddball/sub_%d', subject));
 result = table();
 result = addvars(result, string.empty(), 'NewVariableNames', "stimulus");
 %% degree
@@ -63,58 +64,75 @@ widthDeg = round(2*180*atan(ScrWidth/(2*viewDist))/pi); % visual angle deg of th
 deg2pix  = round(pw/widthDeg);
 %% Practice Block
 if block == 1
+    % create subject file
+    time_start = char(datetime, 'yyyy-MM-dd__HH-mm-ss');
+    file_name = sprintf(['result/oddball/sub_%d__', time_start], subject);
+    mkdir(file_name);
     % introduction
     IntroImage = imread('stimuli_oddball/introduction.png');
     PracticeImage = imread('stimuli_oddball/practice.png');
     ShowPicWaitKey(IntroImage);
     ShowPicWaitKey(PracticeImage);
     % 15 practice trials(3 target,3 probes,9 distractors)
-    load("stimuli_oddball/practice/prac_order.mat")
-    for i = 1:2
-        prac_trial = prac_order(i);
-        switch prac_trial
-            case {1,2,3}
-                IntroStimPic = imread('stimuli_oddball/practice/prac_target.png');
-            case {4,5,6}
-                IntroStimPic = imread(sprintf('stimuli_oddball/practice/probe_%d.png',prac_trial-3));
-            case {7,8,9,10,11,12,13,14,15}
-                IntroStimPic = imread(sprintf('stimuli_oddball/practice/prac_distractors_%d.png',prac_trial-6));
+    pass = 0;
+    while pass~=1
+        if pass~=0
+            ShowPicWaitKey(imread('stimuli_oddball/prac_restart.png'));
         end
-        % Practice Screen
-        FlipFix();
-        ShowPic(IntroStimPic);   
-        t_start = Screen('Flip', x.window);
-        while KbCheck(), end           
-        while GetSecs - t_start < trial_duration
-            [keyIsDown, t_end, keyCode] = KbCheck();      
-            if keyIsDown
-                    if keyCode(quit_key)
-                        ListenChar(0);
-                        ShowCursor();
-                        Screen('CloseAll');
-                        return; 
-                    elseif ~keyCode(reaction_key)
-                        fb=0;%false alarm
-                        break;
-                    elseif keyCode(reaction_key)
-                        if ismember(prac_trial,4:1:15)
+        pass_count = 0;
+        prac_order = randperm(15);
+        cost_t = trial_duration;
+        for i = 1:15
+            prac_trial = prac_order(i);
+            switch prac_trial
+                case {1,2,3}
+                    IntroStimPic = imread('stimuli_oddball/practice/prac_target.png');
+                case {4,5,6}
+                    IntroStimPic = imread(sprintf('stimuli_oddball/practice/probe_%d.png',prac_trial-3));
+                case {7,8,9,10,11,12,13,14,15}
+                    IntroStimPic = imread(sprintf('stimuli_oddball/practice/prac_distractors_%d.png',prac_trial-6));
+            end
+            % Practice Screen
+            FlipFix(cost_t);
+            ShowPic(IntroStimPic);   
+            t_start = Screen('Flip', x.window);
+            while KbCheck(), end           
+            while GetSecs - t_start < trial_duration
+                cost_t = GetSecs - t_start;
+                [keyIsDown, t_end, keyCode] = KbCheck();      
+                if keyIsDown
+                        if keyCode(quit_key)
+                            ListenChar(0);
+                            ShowCursor();
+                            Screen('CloseAll');
+                            return; 
+                        elseif ~keyCode(reaction_key)
                             fb=0;%false alarm
                             break;
-                        else
-                            fb=1;%correct
-                            break;
+                        elseif keyCode(reaction_key)
+                            if ismember(prac_trial,4:1:15)
+                                fb=0;%false alarm
+                                break;
+                            else
+                                fb=1;%correct
+                                break;
+                            end
                         end
-                    end
-            end
-        end
-            if  GetSecs - t_start >= trial_duration
-                if ismember(prac_trial,4:1:15)
-                    fb=1;%correct missing
-                else
-                    fb=0;%missing
                 end
-            end        
-            feedback(fb);
+            end
+                if  GetSecs - t_start >= trial_duration
+                    if ismember(prac_trial,4:1:15)
+                        fb=1;%correct missing
+                    else
+                        fb=0;%missing
+                    end
+                end
+                pass_count = pass_count+fb;
+                if ismember(prac_trial,1:3)
+                feedback(fb);
+                end
+        end
+        pass = pass_count/15;
     end
 end
 %% formal exp
@@ -130,6 +148,7 @@ for i = block:n_block
 %     outp(port_address, 88);
 %     WaitSecs(0.004);
 %     outp(port_address, 0);
+    cost_t = trial_duration;
     for j = 1:n_trial
         order = exp_text(i,j);
 % order: ABC,A:stim_type; B:probe_num;C:soldier_num
@@ -155,13 +174,16 @@ for i = block:n_block
             case 6
                 id = 0;
         end
-        t = FlipFix();
+%     outp(port_address, soldier_num);
+%     WaitSecs(0.004);
+%     outp(port_address, 0);
+        t = FlipFix(cost_t);
         warning off
         result.stimulus(2*j-1) = "fixation";
         result.response(2*j-1) = 99;
         result.rt(2*j-1) = t;
         warning on
-%         outp(port_address, sold_marker);%255(sold_num,stim_num,type)
+%         outp(port_address, sold_marker);%255，type, probe_num, soldier_num可以放在注视点
 %         WaitSecs(0.004);
 %         outp(port_address, 0);
         if id==0 
@@ -170,14 +192,15 @@ for i = block:n_block
         else
             StimPic = imread(sprintf(['stimuli_oddball/exp/probes/',id,'.png']));
             ShowPic(StimPic);
-            Screen('TextSize',x.window,40);
-            DrawFormattedText(x.window, double(num2str(soldier_num)), x.x_center+30, 700, [255, 255, 255]);
-            DrawFormattedText(x.window, double(num2str(probe_num)), x.x_center+30, 800, [255, 255, 255]);
+            Screen('TextSize',x.window,49);
+            DrawFormattedText(x.window, double(num2str(soldier_num)), x.x_center+30, 715, [255, 255, 255]);
+            DrawFormattedText(x.window, double(num2str(probe_num)), x.x_center+30, 785, [255, 255, 255]);
         end
         t_start = Screen('Flip', x.window);
         warning off
         while KbCheck(), end
         while GetSecs - t_start < trial_duration
+            cost_t = GetSecs - t_start;
             [keyIsDown, t_end, keyCode] = KbCheck();
             if keyIsDown
                     if keyCode(quit_key)
@@ -219,9 +242,6 @@ for i = block:n_block
     for n = 1:n_trial
         ABC = result.stimulus(2*n);
         R = result.response(2*n);
-        A = floor(ABC/100); % stim_type
-        B = mod(ABC,10); % solder_num
-        C = (ABC-B-C*100)/10; % probe_num
         if ABC==600 && R==1
             right = right+1;
         elseif ABC~=600 && R==99
@@ -230,18 +250,20 @@ for i = block:n_block
     end
     result.accuracy(i) = right/n_trial;
     % save data
-    writetable(result, sprintf('result/oddball/sub_%d/block_%d.csv', subject, i));
+    time_end = char(datetime, 'yyyy-MM-dd__HH-mm-ss');
+    block_name = sprintf([file_name, '/block_%d__', time_end, '.csv'], i);
+    writetable(result, block_name);
     % rest
     if i < n_block
 %         outp(port_address, 66);
 %         outp(port_address, 0);
 %remind of accuracy
         acc = result.accuracy(i);
-        if acc<0.8
+        if acc<1
             over_error = imread('stimuli_oddball/over_error.png');
             ShowPicWaitKey(over_error);
         end
-        ShowPicWaitKey(BreakPic);
+        ShowPicWaitKey(BreakPic,break_key);
 
     end
 end
@@ -251,20 +273,33 @@ ShowPicWaitKey(finish_image);
 Screen('CloseAll');
 ListenChar(0);
 ShowCursor();
-final_data = readtable(sprintf('result/oddball/sub_%d/block_1.csv', subject));
+final_data = readtable(block_name);
 for i = 2:5
-    final_data = vertcat(final_data, readtable(sprintf('result/oddball/sub_%d/block_%d.csv', subject, i)));
+    final_data = vertcat(final_data, block_name);
 end
-writetable(final_data, sprintf('result/oddball/sub_%d/result.csv', subject));
+writetable(final_data, sprintf([file_name,'result.csv']));
 
 %% function
 % Show picture untill key is press down
-function ShowPicWaitKey(image)
+function ShowPicWaitKey(image,keyname)
 global x
+
 texture = Screen('MakeTexture', x.window, image);
 Screen('DrawTexture', x.window, texture);
 Screen('Flip', x.window);
 while KbCheck(), end
+if nargin == 2
+     while 1
+    [keyIsDown, ~, keyCode] = KbCheck();
+       if keyIsDown
+                if  keyCode(KbName(keyname))
+                    break;
+                else 
+                    continue;
+                end
+       end
+    end
+end 
 KbStrokeWait;
 Screen('Flip', x.window);
 end
@@ -275,7 +310,7 @@ global x %#ok<*GVMIS>
 if nargin < 1
 	fixation_duration = 0.5;
 else 
-    fixation_duration = 0.5-t;
+    fixation_duration = 1.5-t;
 end 
 
 fixation = '+';
@@ -292,25 +327,7 @@ Screen('Flip', x.window);
 WaitSecs(fixation_duration);
 end
 
-%% Draw picture on screen
-function DrawPic(image,y)
-global x
-texture = Screen('MakeTexture', x.window, image);
-width = 0.20 * x.windowRect(3);
-height = width*(5/4);
-rect = [x.x_center-0.5*width, y-0.5*height, x.x_center+0.5*width, y+0.5*height];
-Screen('DrawTexture', x.window, texture, [], rect);
-end
-
-%% Show picture untill key is press down
-function ShowPicWaitSec(image,t)
-global x
-texture = Screen('MakeTexture', x.window, image);
-Screen('DrawTexture', x.window, texture);
-Screen('Flip', x.window);
-WaitSecs(t);
-end
-
+%% Show picture
 function ShowPic(image)
 global x
 texture = Screen('MakeTexture', x.window, image);
