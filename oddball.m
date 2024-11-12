@@ -51,7 +51,7 @@ Others
 %}
 % experiment settings
 n_block = 5;
-n_trial = 2;
+n_trial = 225;
 trial_duration = 1;
 prac_duration = 1.5;
 % create result data
@@ -85,7 +85,7 @@ if block == 1
         pass_count = 0;
         prac_order = randperm(15);
         cost_t = trial_duration;
-        for i = 1:1
+        for i = 1:15
             prac_trial = prac_order(i);
             switch prac_trial
                 case {1,2,3}
@@ -135,7 +135,7 @@ if block == 1
                 feedback(fb);
                 end
         end
-        pass = pass_count/1;
+        pass = pass_count/15;
     end
 end
 %% formal exp
