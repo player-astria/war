@@ -94,7 +94,7 @@ if block == 1
                     IntroStimPic = imread(sprintf('stimuli_oddball/practice/prac_distractors_%d.png',prac_trial-6));
             end
             % Practice Screen
-            FlipFix(cost_t);
+            FlipFix(cost_t,1);
             ShowPic(IntroStimPic);   
             t_start = Screen('Flip', x.window);
             while KbCheck(), end           
@@ -306,12 +306,14 @@ Screen('Flip', x.window);
 end
 
 %% Draw fixation
-function fixation_duration = FlipFix(t)
+function fixation_duration = FlipFix(t,prac)
 global x %#ok<*GVMIS> 
 if nargin < 1
 	fixation_duration = 0.5;
-else 
+elseif nargin == 1 
     fixation_duration = 1.5-t;
+else
+    fixation_duration = 2-t;
 end 
 
 fixation = '+';
