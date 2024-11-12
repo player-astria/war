@@ -27,8 +27,6 @@ PsychDefaultSetup(2);
 x.screenNumber = max(Screen('Screens'));
 [x.window, x.windowRect] = Screen('OpenWindow', x.screenNumber, x.bg_color);
 [x.x_center, x.y_center] = RectCenter(x.windowRect);
-Screen('TextFont', x.window, 'Microsoft YaHei'); 
-Screen('TextStyle', x.window, 1);
 Screen('TextColor', x.window, 30); 
 Screen('Preference','TextEncodingLocale','UTF-8');
 % keyboard defination
@@ -160,8 +158,8 @@ for i = block:n_block
         stim_type = floor(order/100);
         soldier_num = mod(order,10);
         probe_num = (order-soldier_num-stim_type*100)/10;
-%         stim_marker = stim_type*10+probe_num;
-%         sold_marker = 90+soldier_num;
+%         stim_marker = stim_type;
+%         sold_marker = soldier_num;
         % stim picture
         switch stim_type
             case 1
@@ -177,7 +175,7 @@ for i = block:n_block
             case 6
                 id = 0;
         end
-%     outp(port_address, soldier_marker);
+%     outp(port_address, soldier_num);
 %     WaitSecs(0.004);
 %     outp(port_address, 0);
         t = FlipFix(cost_t);
@@ -186,7 +184,7 @@ for i = block:n_block
         result.response(2*j-1) = 99;
         result.rt(2*j-1) = t;
         warning on
-%         outp(port_address, stim_marker);%255，type, probe_num, soldier_num可以放在注视点
+%         outp(port_address, sold_marker);%255，type, probe_num, soldier_num可以放在注视点
 %         WaitSecs(0.004);
 %         outp(port_address, 0);
         if id==0 
@@ -245,9 +243,9 @@ for i = block:n_block
     for n = 1:n_trial
         ABC = result.stimulus(2*n);
         R = result.response(2*n);
-        if ABC=="600" && R==1
+        if (ABC==600) && (R==1)
             right = right+1;
-        elseif ABC~="600" && R==99
+        elseif ABC~=600 && R==99
             right = right+1;
         end
     end
