@@ -39,8 +39,8 @@ reaction_key = KbName('space');
 break_key = KbName('s');
 % port setting
 port_address = hex2dec('037F');
-    %config_io;
-    % outp(port_address, 0);
+%     config_io;
+%     outp(port_address, 0);
 %{
 Stimulus Markers
     
@@ -148,10 +148,11 @@ ShowPicWaitKey(expintro_image);
 exp_text = oddball_generate; 
 BreakPic = imread('stimuli_oddball/break.png');
 for i = block:n_block
-%     outp(port_address, 88);
-%     WaitSecs(0.004);
-%     outp(port_address, 0);
+    outp(port_address, 88);
+    WaitSecs(0.004);
+    outp(port_address, 0);
     cost_t = trial_duration;
+    FlipFix();
     for j = 1:n_trial
         order = exp_text(i,j);
 % order: ABC,A:stim_type; B:probe_num;C:soldier_num
@@ -160,8 +161,8 @@ for i = block:n_block
         stim_type = floor(order/100);
         soldier_num = mod(order,10);
         probe_num = (order-soldier_num-stim_type*100)/10;
-%         stim_marker = stim_type*10+probe_num;
-%         sold_marker = 90+soldier_num;
+        stim_marker = stim_type*10+probe_num;
+        sold_marker = 90+soldier_num;
         % stim picture
         switch stim_type
             case 1
@@ -177,18 +178,6 @@ for i = block:n_block
             case 6
                 id = 0;
         end
-%     outp(port_address, soldier_marker);
-%     WaitSecs(0.004);
-%     outp(port_address, 0);
-        t = FlipFix(cost_t);
-        warning off
-        result.stimulus(2*j-1) = "fixation";
-        result.response(2*j-1) = 99;
-        result.rt(2*j-1) = t;
-        warning on
-%         outp(port_address, stim_marker);%255，type, probe_num, soldier_num可以放在注视点
-%         WaitSecs(0.004);
-%         outp(port_address, 0);
         if id==0 
             StimPic = imread(sprintf('stimuli_oddball/exp/target_distractors/soldier_%d.png',soldier_num));
             ShowPic(StimPic);
@@ -199,6 +188,9 @@ for i = block:n_block
             DrawFormattedText(x.window, double(num2str(soldier_num)), x.x_center+30, 715, [255, 255, 255]);
             DrawFormattedText(x.window, double(num2str(probe_num)), x.x_center+30, 785, [255, 255, 255]);
         end
+outp(port_address, sold_marker);%255，type, probe_num, soldier_num可以放在注视点
+WaitSecs(0.004);
+outp(port_address, 0);
         t_start = Screen('Flip', x.window);
         warning off
         while KbCheck(), end
@@ -212,32 +204,42 @@ for i = block:n_block
                         Screen('CloseAll');
                         return; 
                     elseif ~keyCode(reaction_key)
-% outp(port_address, 200);
-% WaitSecs(0.004);
-% outp(port_address, 0);
+outp(port_address, 200);
+WaitSecs(0.004);
+outp(port_address, 0);
                         result.rt(2*j) = GetSecs - t_start;
                         response=0;
                         break;    %false alarm
                     elseif keyCode(reaction_key)
                         result.rt(2*j) = GetSecs - t_start;
                         response=1;
-% outp(port_address, 100);
-% WaitSecs(0.004);
-% outp(port_address, 0);
+outp(port_address, 100);
+WaitSecs(0.004);
+outp(port_address, 0);
                         break;
                     end
             end
         end
         if  GetSecs - t_start >= trial_duration
-% outp(port_address, 199);
-% WaitSecs(0.004);
-% outp(port_address, 0);
+outp(port_address, 199);
+WaitSecs(0.004);
+outp(port_address, 0);
                 response = 99;
                 result.rt(2*j) = trial_duration;
         end      
 
         result.stimulus(2*j) = order;
         result.response(2*j) = response; % 0-wrong_reaction; 1-reaction; 99-no_reaction
+        warning on
+
+        t = FlipFix(cost_t);
+outp(port_address, stim_marker);
+WaitSecs(0.004);
+outp(port_address, 0);
+        warning off
+        result.stimulus(2*j-1) = "fixation";
+        result.response(2*j-1) = 99;
+        result.rt(2*j-1) = t;
         warning on
     end
     % calculate accuracy
@@ -258,8 +260,8 @@ for i = block:n_block
     writetable(result, block_name);
     % rest
     if i < n_block
-%         outp(port_address, 66);
-%         outp(port_address, 0);
+        outp(port_address, 66);
+        outp(port_address, 0);
 %remind of accuracy
         acc = result.accuracy(i);
         if acc<1
