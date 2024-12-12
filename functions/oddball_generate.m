@@ -1,12 +1,10 @@
 function text_data = oddball_generate(~)
-% generate a matrix of 5*50, which represents 5blocks and 50 trials, 0-9 
-% represents target trials, 10-19 represents probes trials and 20-49 
-% represents standard trials
+% generate a matrix of 5*225, which represents 5 blocks and 225 trials
 clc;
 clear;
 rng('shuffle');
 text_data = zeros(5,225);
-
+      
 for i = 1:5 %block
 n=1;
 %45 probe

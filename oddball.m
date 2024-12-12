@@ -25,7 +25,7 @@ x.bg_color = [122 122 122];
 Screen('Preference', 'SkipSyncTests', 1);
 PsychDefaultSetup(2);
 x.screenNumber = max(Screen('Screens'));
-[x.window, x.windowRect] = Screen('OpenWindow', x.screenNumber, x.bg_color);
+[x.window, x.windowRect] = Screen('OpenWindow', x.screenNumber, x.bg_color,[0,0,1920,1080]);
 [x.x_center, x.y_center] = RectCenter(x.windowRect);
 Screen('TextFont', x.window, 'Microsoft YaHei'); 
 Screen('TextStyle', x.window, 1);
@@ -74,8 +74,12 @@ if block == 1
     % introduction
     IntroImage = imread('stimuli_oddball/introduction.png');
     PracticeImage = imread('stimuli_oddball/practice.png');
+    prac_intro1 = imread('stimuli_oddball/prac_intro1.png');
+    prac_intro2 = imread('stimuli_oddball/prac_intro2.png');
     ShowPicWaitKey(IntroImage);
     ShowPicWaitKey(PracticeImage);
+    ShowPicWaitKey(prac_intro1);
+    ShowPicWaitKey(prac_intro2);
     % 15 practice trials(3 target,3 probes,9 distractors)
     pass = 0;
     while pass~=1
@@ -141,16 +145,27 @@ end
 %% formal exp
 % introduction
 expintro_image = imread('stimuli_oddball/exp.png');
+intro_1 = imread('stimuli_oddball/intro_1.png');
+intro_2 = imread('stimuli_oddball/intro_2.png');
+intro_3 = imread('stimuli_oddball/intro_3.png');
+intro_4 = imread('stimuli_oddball/intro_4.png');
+ShowPicWaitKey(intro_1);
+ShowPicWaitKey(intro_2);
+ShowPicWaitKey(intro_3);
+ShowPicWaitKey(intro_4);
 ShowPicWaitKey(expintro_image);
 % load(sprintf("order/%d.mat",subject));
 % generate stimulation order, probe1-child, probe2-pregnant, probe3-drunk,
 % probe4-criminal, probe5-civilian
 exp_text = oddball_generate; 
+% generate line order, 1 represents soldier number in the first line, 
+% 2 represents probe number in the first line
+line_order = lineorder_generate;
 BreakPic = imread('stimuli_oddball/break.png');
 for i = block:n_block
-    outp(port_address, 88);
-    WaitSecs(0.004);
-    outp(port_address, 0);
+%     outp(port_address, 88);
+%     WaitSecs(0.004);
+%     outp(port_address, 0);
     cost_t = trial_duration;
     FlipFix();
     for j = 1:n_trial
@@ -161,8 +176,9 @@ for i = block:n_block
         stim_type = floor(order/100);
         soldier_num = mod(order,10);
         probe_num = (order-soldier_num-stim_type*100)/10;
+        order_line = line_order(i,j);
         stim_marker = stim_type*10+probe_num;
-        sold_marker = 90+soldier_num;
+        sold_marker = 10*order_line+soldier_num;
         % stim picture
         switch stim_type
             case 1
@@ -179,18 +195,18 @@ for i = block:n_block
                 id = 0;
         end
         if id==0 
-            StimPic = imread(sprintf('stimuli_oddball/exp/target_distractors/soldier_%d.png',soldier_num));
+            StimPic = imread(sprintf('stimuli_oddball/exp/target_distractors/soldier_%d_%d.png',soldier_num,order_line));
             ShowPic(StimPic);
         else
-            StimPic = imread(sprintf(['stimuli_oddball/exp/probes/',id,'.png']));
+            StimPic = imread(sprintf(['stimuli_oddball/exp/probes/',id,'_%d.png'],order_line));
             ShowPic(StimPic);
-            Screen('TextSize',x.window,49);
-            DrawFormattedText(x.window, double(num2str(soldier_num)), x.x_center+30, 715, [255, 255, 255]);
-            DrawFormattedText(x.window, double(num2str(probe_num)), x.x_center+30, 785, [255, 255, 255]);
+            Screen('TextSize',x.window,42);
+            DrawFormattedText(x.window, double(num2str(soldier_num)), x.x_center+25,520, [255, 255, 255]);
+            DrawFormattedText(x.window, double(num2str(probe_num)), x.x_center+25, 610, [255, 255, 255]);
         end
-outp(port_address, sold_marker);%255，type, probe_num, soldier_num可以放在注视点
-WaitSecs(0.004);
-outp(port_address, 0);
+% outp(port_address, sold_marker);%255，type, probe_num, soldier_num可以放在注视点
+% WaitSecs(0.004);
+% outp(port_address, 0);
         t_start = Screen('Flip', x.window);
         warning off
         while KbCheck(), end
@@ -204,26 +220,26 @@ outp(port_address, 0);
                         Screen('CloseAll');
                         return; 
                     elseif ~keyCode(reaction_key)
-outp(port_address, 200);
-WaitSecs(0.004);
-outp(port_address, 0);
+% outp(port_address, 200);
+% WaitSecs(0.004);
+% outp(port_address, 0);
                         result.rt(2*j) = GetSecs - t_start;
                         response=0;
                         break;    %false alarm
                     elseif keyCode(reaction_key)
                         result.rt(2*j) = GetSecs - t_start;
                         response=1;
-outp(port_address, 100);
-WaitSecs(0.004);
-outp(port_address, 0);
+% outp(port_address, 100);
+% WaitSecs(0.004);
+% outp(port_address, 0);
                         break;
                     end
             end
         end
         if  GetSecs - t_start >= trial_duration
-outp(port_address, 199);
-WaitSecs(0.004);
-outp(port_address, 0);
+% outp(port_address, 199);
+% WaitSecs(0.004);
+% outp(port_address, 0);
                 response = 99;
                 result.rt(2*j) = trial_duration;
         end      
@@ -233,9 +249,9 @@ outp(port_address, 0);
         warning on
 
         t = FlipFix(cost_t);
-outp(port_address, stim_marker);
-WaitSecs(0.004);
-outp(port_address, 0);
+% outp(port_address, stim_marker);
+% WaitSecs(0.004);
+% outp(port_address, 0);
         warning off
         result.stimulus(2*j-1) = "fixation";
         result.response(2*j-1) = 99;
@@ -260,8 +276,9 @@ outp(port_address, 0);
     writetable(result, block_name);
     % rest
     if i < n_block
-        outp(port_address, 66);
-        outp(port_address, 0);
+%         outp(port_address, 66);
+%         WaitSecs(0.004);
+%         outp(port_address, 0);
 %remind of accuracy
         acc = result.accuracy(i);
         if acc<1
